@@ -6,9 +6,12 @@ import com.example.elasticsearchtest.demos.web.pojo.DoctorMedicineES;
 import com.example.elasticsearchtest.demos.web.pojo.HotelConstants;
 import com.example.elasticsearchtest.demos.web.service.DoctorMedicineServie;
 import org.apache.http.HttpHost;
+import org.elasticsearch.action.bulk.BulkRequest;
+import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.index.IndexRequest;
+import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestClient;
@@ -23,6 +26,9 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 import javax.annotation.Resource;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 import java.util.logging.Logger;
 
 /**
@@ -105,6 +111,45 @@ public class AddDocumentTest {
 
     }
 
+    //修改文档
+    @Test
+    public void modifyDoc() throws IOException {
 
+        //修改的index和document ID
+        UpdateRequest updateRequest = new UpdateRequest("doctormedicine", "1");
+
+        updateRequest.doc("dynasty","元","isStandard","1");
+        client.update(updateRequest, RequestOptions.DEFAULT);
+
+    }
+
+
+    // 删除文档
+    @Test
+    public void deleteDoc() throws IOException {
+        DeleteRequest request = new DeleteRequest("doctormedicine","1");
+        client.delete(request,RequestOptions.DEFAULT);
+    }
+
+
+    // 批量添加数据
+    @Test
+    public void batchSave() throws IOException {
+        List<DoctorMedicine> all = doctorMedicineServie.getAll();
+        BulkRequest bulkRequestRequest = new BulkRequest("doctor-medicine");
+
+        all.stream().parallel().peek((item)->{
+            String jsonString = JSON.toJSONString(item);
+
+            //创建文档的request对象
+            IndexRequest indexRequest = new IndexRequest("doctormedicine").id(item.getId().toString());
+            indexRequest.source(jsonString,XContentType.JSON);
+            bulkRequestRequest.add(indexRequest);
+        }).count();
+
+        //发送请求
+        client.bulk(bulkRequestRequest, RequestOptions.DEFAULT);
+
+    }
 
 }
